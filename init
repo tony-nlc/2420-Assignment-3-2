@@ -1,0 +1,149 @@
+#!/bin/bash
+# Update System Packages
+pacman --noconfirm -Syu
+# Install Required Packages
+pacman --noconfirm -S ufw nginx git
+
+# Create A New User
+useradd -r -m -d /var/lib/webgen -s /usr/bin/nologin webgen
+
+# Create New Directories Follwing the Structure
+mkdir -p /var/lib/webgen/bin
+mkdir -p /var/lib/webgen/HTML
+mkdir -p /var/lib/webgen/documents
+
+# Create A Sample File
+cat > /var/lib/webgen/documents/file-one <<EOF
+File One
+EOF
+cat > /var/lib/webgen/documents/file-two <<EOF
+File Two
+EOF
+
+# Change Owner Recursively
+chown -R webgen:webgen /var/lib/webgen
+# Edit Permission Recursively
+chmod -R u+wrx g+wrx /var/lib/webgen 
+
+# Get Generate Index File
+git clone https://git.sr.ht/~nathan_climbs/2420-as3-p2-start
+mv ./2420-as3-p2-start/generate_index /var/lib/webgen/bin/
+rm -rf 2420-as3-p2-start
+chmod +x /var/lib/webgen/bin/generate_index
+
+# Create A generate-index.service File
+cat > /etc/systemd/system/generate-index.service <<EOF
+[Unit]
+Description=Run generate_index
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=webgen
+Group=webgen
+ExecStart=/var/lib/webgen/bin/generate_index
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Create A generate-index.timer File
+cat > /etc/systemd/system/generate-index.timer <<EOF
+[Unit]
+Description=Run generate_index every 05:00
+
+[Timer]
+OnCalendar=*-*-* 05:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# Reload The Services Directories
+systemctl daemon-reload
+
+# Enable The Timer And The Service
+systemctl enable --now generate-index.service
+systemctl enable --now generate-index.timer
+
+# Overwrite The Default nginx Config File
+cat > /etc/nginx/nginx.conf <<EOF
+user webgen webgen;
+worker_processes auto;
+worker_cpu_affinity auto;
+
+events {
+    multi_accept on;
+    worker_connections 1024;
+}
+
+http {
+    charset utf-8;
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    server_tokens off;
+    log_not_found off;
+    types_hash_max_size 4096;
+    client_max_body_size 16M;
+
+    # MIME
+    include mime.types;
+    default_type application/octet-stream;
+
+    # logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log warn;
+
+    # load configs
+    include /etc/nginx/conf.d/*.conf;
+    include /etc/nginx/sites-enabled/*;
+}
+EOF
+
+# Create Directories For Server Block
+mkdir /etc/nginx/sites-available
+mkdir /etc/nginx/sites-enabled
+
+# Create Server Block Config File
+cat > /etc/nginx/sites-available/example.conf <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    
+    server_name _;
+    
+    root /var/lib/webgen/HTML;
+    index index.html;
+    
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+    location /documents {
+        root /var/lib/webgen;
+        autoindex on;
+	    autoindex_exact_size off;
+        autoindex_localtime on;
+    }
+}
+EOF
+
+# Enable The Server Block
+ln -s /etc/nginx/sites-available/example.conf /etc/nginx/sites-enabled/example.conf
+
+# Configurate Firewall
+ufw default deny incoming
+ufw default allow outgoing
+
+# Allows SSH, HTTP, HTTPS Ports
+sudo ufw allow 22
+sudo ufw allow 80
+sudo ufw allow 443
+
+# Start The Firewall
+sudo ufw --force enable
+
+# Restart The nginx Server
+sudo systemctl disable --now nginx
+sudo systemctl enable --now nginx
