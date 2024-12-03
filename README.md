@@ -18,8 +18,29 @@ Then, select the region, image (Arch for this project), CPU options, SSH keys an
 Then, click `Create Droplet`
 
 ## Task 2: Create Load Balancer
-The we will need create load balancer on DigitalOcean by click the "Create" button at the top right. Then, click `Load Balancers`
+Then we will need create load balancer on DigitalOcean by click the "Create" button at the top right. Then, click `Load Balancers`
 
 ![alt text](image.png)
 
 Then, select the datacenter region and under `Connect Droplets` select `web` tag. Then scroll down and click Create.
+
+## Task 3 & 4: Get `generate_index` File and Set Up Servers
+Now use the following command to ssh to your droplet:
+```bash
+ssh -i ~/.ssh/do-key <username>@<ip address>
+```
+Then use the following command to set up your server,
+```bash
+sudo pacman -S dos2unix
+git clone https://github.com/tony-nlc/2420-Assignment-3-2
+dos2unix 2420-Assignment-3-2/init
+chmod +x 2420-Assignment-3-2/init
+sudo 2420-Assignment-3-2/init
+```
+
+After doing this for both of your droplets. You can validate the setup by enter the following address in your browser:
+```
+<load balancer ip address>
+<load balancer ip address>/documents
+```
+Click Refresh to see if the `Public IP address of server` changes.

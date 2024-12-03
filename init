@@ -1,4 +1,13 @@
 #!/bin/bash
+
+# Error handle 
+if [[ $EUID -ne 0 ]]; then
+  # Print an error message
+  echo "You need to 'sudo' this script"
+  # Exit the script
+  exit 1
+fi
+
 # Update System Packages
 pacman --noconfirm -Syu
 # Install Required Packages
