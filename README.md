@@ -9,7 +9,7 @@ This assignment will set up two servers with a load balancer. The servers will s
 * git
 
 ## Task 1: Create Droplets
-Let's start with creating two virutal machine (droplet) on DigitalOcean by click the "Create" button at the top right.
+Let's start with creating two virutal machine (droplet) on DigitalOcean by click the `Create` button at the top right. Then, click `Droplets`.
 
 ![alt text](image.png)
 
@@ -18,3 +18,8 @@ Then, select the region, image (Arch for this project), CPU options, SSH keys an
 Then, click `Create Droplet`
 
 ## Task 2: Create Load Balancer
+The we will need create load balancer on DigitalOcean by click the "Create" button at the top right. Then, click `Load Balancers`
+
+![alt text](image.png)
+
+Then, select the datacenter region and under `Connect Droplets` select `web` tag. Then scroll down and click Create.
